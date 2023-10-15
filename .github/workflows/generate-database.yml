@@ -1,0 +1,47 @@
+name: Generate pv_db.txt
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+env:
+  DB_PATH: 'db-items'
+  DESTINATION_PATH: 'mod_pv_db.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  generate_pv_db:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: "Checkout source code"
+      uses: actions/checkout@v3
+
+    - name: "Generate PV DB"
+      run: |
+        chmod +x generate-database.sh
+        ./generate-database.sh "${{ env.DB_PATH }}" "${{ env.DESTINATION_PATH }}"
+
+    - name: "Commit pv_db.txt"
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add "${{ env.DESTINATION_PATH }}"
+        git commit -m "Add generated pv_db.txt." || true
+
+    - name: "Push changes"
+      uses: ad-m/github-push-action@v0.6.0
+      with:
+        branch: ${{ github.head_ref }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        force: true
+
+    - name: "Upload artifacts"
+      uses: actions/upload-artifact@v3
+      with:
+        name: pv_db.txt
+        path: ${{ env.DESTINATION_PATH }}
